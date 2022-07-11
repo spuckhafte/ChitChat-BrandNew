@@ -10,7 +10,7 @@ const port = process.env.PORT || 3000;
 
 
 let users = {} // { socket.id: 'name' }
-const dbUrl = 'mongodb+srv://shit-chat:hesoyam@cluster0.1at1u.mongodb.net/?retryWrites=true&w=majority'
+const dbUrl = require('./secret')
 const connectionParams = {
     useNewUrlParser: true,
     useUnifiedTopology: true
