@@ -2,7 +2,7 @@ const Root = tpci('main:#app:main-app:root').make();
 const Lobby = tpci('div:#root:msg-area:lobby').make();
 
 const Online = tpci('button:#root:show-online-btn:online', true);
-const setToggle = Online.$state('toggle', false);
+const setToggle = Online.$state('toggle', true);
 
 Online.$effect(() => {
   Online.prop = {
@@ -11,7 +11,9 @@ Online.$effect(() => {
   Online.render('re')
 }, ['$-toggle'])
 
-Online.events = { click: () => setToggle(p => !p) }
+Online.events = {
+  click: () => setToggle(p => !p)
+}
 Online.make('re');
 
 
@@ -20,23 +22,33 @@ const Chart = tpci('div:#root:show-online-chart:chart', true);
 Online.init.pseudoChildren = [Chart];
 Online.render('re');
 
-const setOnline = Chart.$state('online', ['You']);
+const setOnline = Chart.$state('online', JSON.stringify([]));
 Chart.$effect(() => {
   Chart.prop = {
     css: {
       display: Chart.getPseudoState('toggle') ? 'block' : 'none'
     }
   };
-  Chart.render('re');
-}, ['$$-toggle'])
+  Chart.el.innerHTML = ''
+  Chart.isMount() ? Chart.render('re') : Chart.make('re')
+
+  // console.log(Chart.getPseudoState('toggle'))
+
+  const OnlinePeople = tpci('div:#chart:online-user-in-chart:d');
+  OnlinePeople.init.iterate = JSON.parse(Chart.getState('online'));
+  OnlinePeople.$state(':user');
+  OnlinePeople.prop = {
+    text: '$$-:user'
+  }
+  OnlinePeople.renderFor();
+}, ['$$-toggle', '$-online'])
 Chart.make('re')
 
 const Send = tpci('form:#root:send-msg:send', true);
 Send.events = {
-  submit: e => {
+  submit: async e => {
     e.preventDefault()
-    let message = Input.getState('input')
-    console.log(message)
+    await sendMsg(Input.getState('input'))
   }
 }
 Send.make('re')
@@ -78,32 +90,25 @@ function createMsg(text = '', author = '', _self = true, date = '') {
   }
   Author.make()
 
+  Lobby.el.scrollTop = Lobby.el.scrollHeight;
+
   return {
     msg: text, author, date: date ? date : dateBuilder()
   }
 }
 
-function createJoinMsg(user = '') {
+// setToggle(true)
+function createJoinMsg(user = '', title = false) {
   const Join = tpci(`div:#lobby:author-joined:join`, true);
   Join.prop = {
     text: user + ' joined'
   }
+  if (title)
+    Join.attr = {
+      title: user
+    }
   Join.make();
 }
-
-createJoinMsg('rakshit')
-
-// console.log(createMsg('hello world this is rakshit', 'rakshit'))
-// createMsg('hello this is me', 'rakshit')
-// createMsg('hello this is the best thing in the world', 'rakshit')
-// createMsg('hello', 'rakshit')
-// createMsg('hello o yeah oeah yeam Iam killing this shit', 'rakshit', false)
-// createMsg('hello boby villanois', 'rakshit', false)
-// createMsg('hello', 'rakshit', false)
-// createMsg('hello this is the best lib ever', 'rakshit', false)
-// createMsg('hello socket.io', 'rakshit')
-// createMsg('hello bun', 'rakshit')
-
 
 function tpci(initString = '', render = false) {
   let [type, parent, className, id] = initString.split(':');
