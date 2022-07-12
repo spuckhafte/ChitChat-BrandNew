@@ -3,7 +3,7 @@ const PRE = 'shitkey-'
 
 users = {}
 
-window.onload = () => {
+window.onload = async () => {
     let username;
 
     if (fromLs(PRE + 'username') || fromSs(PRE + 'username')) {
@@ -21,9 +21,7 @@ window.onload = () => {
     }
 
     toSs(PRE + 'username', username);
-
     socket.emit('user-connect', username);
-    createJoinMsg(username, true)
 }
 
 async function sendMsg(msg = '') {
@@ -39,6 +37,15 @@ socket.on('update-online', usernames => {
     setOnline(JSON.stringify(usernames))
 })
 
+socket.on('load-prev-msg', data => {
+    data = JSON.parse(data);
+    for (let id of Object.keys(data)) {
+        let { author, msg, date } = data[id];
+        createMsg(msg, author, false, date);
+    }
+    socket.emit('fire-join-msg', fromSs(PRE + 'username'))
+})
+
 socket.on('send-join-msg', username => {
     createJoinMsg(username)
 })
@@ -48,6 +55,10 @@ socket.on('msg-of-user', (msg, username, id) => {
     Input.el.focus();
     const msgData = createMsg(msg, username, socket.id == id);
     socket.emit('update-db', msgData);
+})
+
+socket.on('user-left', user => {
+    createJoinMsg(user, false, 1)
 })
 
 function isValid(msg = '') {

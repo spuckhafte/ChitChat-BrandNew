@@ -1,4 +1,12 @@
-const Root = tpci('main:#app:main-app:root').make();
+const Root = tpci('main:#app:main-app:root', true);
+const setDisplay = Root.$state('display', 'none');
+Root.prop = {
+  css: {
+    display: '$-display'
+  }
+}
+Root.make('re');
+
 const Lobby = tpci('div:#root:msg-area:lobby').make();
 
 const Online = tpci('button:#root:show-online-btn:online', true);
@@ -98,16 +106,21 @@ function createMsg(text = '', author = '', _self = true, date = '') {
 }
 
 // setToggle(true)
-function createJoinMsg(user = '', title = false) {
+function createJoinMsg(user = '', title = false, disconnect = 0) { // 0 - false ;; 1 - true
   const Join = tpci(`div:#lobby:author-joined:join`, true);
+  const msg = { 0: 'joined', 1: 'left' }
   Join.prop = {
-    text: user + ' joined'
+    text: `${user} ${msg[disconnect]}`,
+    css: {
+      color: !disconnect ? 'white' : 'red'
+    }
   }
   if (title)
     Join.attr = {
       title: user
     }
   Join.make();
+  Lobby.el.scrollTop = Lobby.el.scrollHeight;
 }
 
 function tpci(initString = '', render = false) {
