@@ -22,8 +22,8 @@ mongoose.connect(dbUrl, connectionParams).then(() => {
     console.log('Error: ' + e)
 })
 
-let channelModel = new ChannelModel();
-// channelModel.messages = "{ 'rakshit': 'hi there fkrs' }"
+// let channelModel = new ChannelModel();
+// channelModel.names = "['test']"
 // channelModel.save((err, data) => {
 //     if (err)
 //         console.error(err)
@@ -60,6 +60,15 @@ io.on('connection', socket => {
 
     socket.on('msg-from-client', (msg, username) => {
         io.emit('msg-of-user', msg, username, socket.id);
+    })
+
+    socket.on('update-db', msgData => {
+        let author = msgData.author;
+        delete msgData.author
+        const exportData = {
+            author: msgData
+        }
+        updateDb
     })
 
     socket.on('disconnect', () => {
