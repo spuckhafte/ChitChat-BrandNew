@@ -31,6 +31,7 @@ Online.init.pseudoChildren = [Chart];
 Online.render('re');
 
 const setOnline = Chart.$state('online', JSON.stringify([]));
+
 Chart.$effect(() => {
   Chart.prop = {
     css: {
@@ -89,7 +90,11 @@ Btn.make('re');
 function createMsg(text = '', author = '', _self = true, date = '') {
   const Show = tpci(`div:#lobby:msg-show${_self ? ',self-msg' : ''}:show`, true);
   Show.prop = { text };
-  Show.attr = { title: date ? date : dateBuilder() }
+
+  let rawDate = date ? date : dateBuilder()
+  let showDate = formatDate(rawDate);
+
+  Show.attr = { title: showDate }
   Show.make('re');
 
   const Author = tpci(`div:#lobby:author-show${_self ? ',self-msg' : ''}:author`, true);
@@ -101,7 +106,7 @@ function createMsg(text = '', author = '', _self = true, date = '') {
   Lobby.el.scrollTop = Lobby.el.scrollHeight;
 
   return {
-    msg: text, author, date: date ? date : dateBuilder()
+    msg: text, author, date: rawDate
   }
 }
 
@@ -121,6 +126,13 @@ function createJoinMsg(user = '', title = false, disconnect = 0) { // 0 - false 
     }
   Join.make();
   Lobby.el.scrollTop = Lobby.el.scrollHeight;
+}
+
+function formatDate(date = '') {
+  let months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+  let date_arr = date.split('/')
+  let month = months[parseInt(date_arr[1]) - 1]
+  return `${date_arr[0]} ${month} ${date_arr[2]}`;
 }
 
 function tpci(initString = '', render = false) {
