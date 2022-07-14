@@ -37,7 +37,6 @@ input:focus {
     background-color: white;
 }
 
-
 #pre-screen {
     position: absolute;
     width: 80%;
@@ -72,6 +71,18 @@ input:focus {
     font-weight: bold;
     cursor: pointer;
     margin-top: 0.5rem;
+}
+
+.toggle-mode {
+    display: block;
+    width: fit-content;
+    background-color: transparent !important;
+    color: blue;
+    font-weight: 500;
+    font-size: normal;
+    position: relative;
+    left: 50%;
+    transform: translate(-50%);
 }
 
 .login-mode {
@@ -183,6 +194,24 @@ input:focus {
 }
 
 
+#tool-tip {
+    width: adjust;
+    padding: 0.5rem;
+    height: auto;
+    background-color: red;
+    font-weight: 700;
+    color: white;
+    text-align: center;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -150%);
+    box-shadow: 0 0 10px red;
+    z-index: 2;
+    display: none;
+    user-select: none;
+    -moz-user-select: none;
+}
 
 ::-webkit-scrollbar {
     width: 5px

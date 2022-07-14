@@ -9,12 +9,28 @@ const io = require('socket.io')(http, {
 const port = process.env.PORT || 3000;
 const { v4: uuid } = require('uuid')
 
-let users = {} // { socket.id: 'name' }
-const dbUrl = require('./secret')
+let users = {} // { socket.id: name }
+const { dbUrl, messagesId, userInfoId } = require('./secret')
 const connectionParams = {
     useNewUrlParser: true,
     useUnifiedTopology: true
 }
+
+/*
+ * messages : {
+    id: {
+        author,
+        msg,
+        data
+    },
+ }
+ * userInfo: {
+    id: {
+        name,
+        password
+    }
+ }
+*/
 
 mongoose.connect(dbUrl, connectionParams).then(() => {
     console.info('Connected to Db')
@@ -22,32 +38,29 @@ mongoose.connect(dbUrl, connectionParams).then(() => {
     console.log('Error: ' + e)
 })
 
-// let channelModel = new ChannelModel();
-// channelModel.messages = "{'rakshit': 'hi'}"
-// channelModel.save((err, data) => {
-//     if (err)
-//         console.error(err)
-//     else
-//         console.log('inserted')
-// })
-
-function readDb(incoming) {
-    ChannelModel.findOne((err, data) => {
+function readDb(type, id, incoming) {
+    ChannelModel.findById(id, (err, data) => {
         if (err) console.log(err)
         else {
             const msgs = data.messages;
-            incoming(msgs)
+            const userInfo = data.userInfo;
+            if (type == 'messages') incoming(msgs);
+            if (type == 'userInfo') incoming(userInfo);
         }
     })
 }
 
-function updateDb(data) {
-    readDb(prevMsgData => {
+function updateDb(type, data, id) {
+    readDb(type, id, prevMsgData => {
         const prevData = JSON.parse(prevMsgData);
         const updatedData = { ...prevData, ...data }
+
+        const shipData = {}
+        shipData[type] = JSON.stringify(updatedData)
+
         ChannelModel.findByIdAndUpdate(
-            '62cd7222a12732b600c87c55',
-            { messages: JSON.stringify(updatedData) },
+            id,
+            shipData,
             (err, data) => {
                 if (err) console.error(err);
                 else console.log('db synced')
@@ -60,10 +73,10 @@ io.on('connection', socket => {
     console.log('connected ' + socket.id);
     socket.on('user-connect', username => {
         users[socket.id] = username;
-        io.emit('update-online', Object.values(users), username);
-        readDb(prevMsgData => {
-            socket.emit('load-prev-msg', prevMsgData);
-        })
+        io.emit('update-online', Object.values(users));
+        readDb('messages', messagesId, prevMsgData => {
+            socket.emit('load-prev-msg', prevMsgData, username);
+        });
     })
 
     socket.on('msg-from-client', (msg, username) => {
@@ -73,20 +86,77 @@ io.on('connection', socket => {
     socket.on('update-db', msgData => {
         const exportData = new Object();
         exportData[uuid()] = msgData;
-        updateDb(exportData);
-    })
+        updateDb('messages', exportData, messagesId);
+    });
 
     socket.on('fire-join-msg', username => {
         io.emit('send-join-msg', username);
+    });
+
+    socket.on('user-register', (name, password) => {
+        readDb('userInfo', userInfoId, usersData => {
+            usersData = JSON.parse(usersData);
+            let alreadyIn = false;
+            for (let user of Object.values(usersData)) {
+                if (user.name == name) {
+                    alreadyIn = true;
+                    break;
+                }
+            }
+            if (alreadyIn) socket.emit('registration-failed', name);
+            else {
+                const exportData = {};
+                exportData[uuid()] = {
+                    name,
+                    password
+                }
+                updateDb('userInfo', exportData, userInfoId);
+                socket.emit('registered', name);
+            }
+        });
+    });
+
+    socket.on('user-login', (name, password) => {
+        readDb('userInfo', userInfoId, usersData => {
+            usersData = JSON.parse(usersData);
+            let validUser = false;
+            for (let user of Object.values(usersData)) {
+                if (user.name == name && user.password == password) {
+                    validUser = true;
+                    break;
+                }
+            }
+            if (validUser) {
+                let sessionAlreadyActive = false;
+                let activeSessionId;
+                for (let id of Object.keys(users)) {
+                    if (name == users[id]) {
+                        sessionAlreadyActive = true;
+                        activeSessionId = id;
+                        break;
+                    }
+                }
+                if (!sessionAlreadyActive) socket.emit('logged-in', name);
+                else socket.emit('session-running', activeSessionId);
+            }
+            else socket.emit('login-failed', name);
+        });
+
+        socket.on('end-session', sessionAddress => {
+            io.emit('nuke-session', sessionAddress, socket.id);
+        });
+
+        socket.on('session-nuked', id => {
+            io.emit('session-nuked', id);
+        })
     })
 
     socket.on('disconnect', () => {
         let username = users[socket.id]
         delete users[socket.id];
         socket.broadcast.emit('update-online', Object.values(users));
-        io.emit('user-left', username);
-    })
+        if (username) io.emit('user-left', username);
+    });
 })
 
 http.listen(port, () => console.log('Listening on port ' + port))
-
