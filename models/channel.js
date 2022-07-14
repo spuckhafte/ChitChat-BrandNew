@@ -3,6 +3,9 @@ const mongoose = require('mongoose');
 const channelSchema = new mongoose.Schema({
     messages: {
         type: String
+    },
+    userInfo: {
+        type: String
     }
 });
 
