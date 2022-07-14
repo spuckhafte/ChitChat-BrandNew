@@ -1,4 +1,4 @@
-# ChitChat-BrandNew
+# [ChitChat-BrandNew](https://shit-chat.netlify.app)
 
 ## Tech Used:
 1. [SpuckJs](https://github.com/spuckhafte/SpuckJs) (*Frontend*)
