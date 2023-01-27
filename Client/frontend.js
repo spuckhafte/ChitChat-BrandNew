@@ -1,4 +1,4 @@
-const socket = io.connect('https://chitchat-iln1.onrender.com');
+const socket = io.connect('https://shit-chat.onrender.com');
 const PRE = 'shitkey-'
 
 users = {}
